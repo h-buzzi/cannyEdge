@@ -30,6 +30,7 @@ def canny_Edge(I, d_padrao, l_Sup, l_Inf):
         return
         
     I = np.float32(I)
+    u,v = I.shape
     k = 6*d_padrao+1
     I = cv2.GaussianBlur(I,(k,k),d_padrao)
     
@@ -41,7 +42,7 @@ def canny_Edge(I, d_padrao, l_Sup, l_Inf):
     M = np.sqrt((I_c*I_c) + (I_l*I_l))
     P = np.arctan2(I_c,I_l)*180/np.pi
     P[P<0]=P[P<0]+180
-    gN = np.zeros(I.shape)
+    gN = np.zeros((u,v))
     
     for i in range(4):
         if i==0:
@@ -57,17 +58,24 @@ def canny_Edge(I, d_padrao, l_Sup, l_Inf):
             ind4 = (M*ind1 > M*ind2) == (M*ind1 > M*ind3)
             gN[ind4] = M[ind4]
     ##Imagens binárias
-    gNH = 255*np.ones(I.shape,dtype=np.uint8)*(gN>(l_Sup*np.amax(gN)))
-    gNL = 255*np.ones(I.shape,dtype=np.uint8)*(gN>l_Inf*np.amax(gN))
-    return gNH, gNL
+    gNH = 255*np.ones((u,v),dtype=np.uint8)*(gN>(l_Sup*np.amax(gN)))
+    gNL = 255*np.ones((u,v),dtype=np.uint8)*(gN>l_Inf*np.amax(gN))
+    gNL = gNL - gNH
+    
+    gLD = gNH
+    for i in range(1,(u-1)):
+        for j in range(1,(v-1)):
+            if(gNH[i][j]==255):
+                gLD[i-1:i+1][j-1:j+1] = gNL[i-1:i+1][j-1:j+1]
+    
+    return gNH, gNL, gLD
 ###### INPUTS
 start = time.time()
 I = cv2.imread('castle.jpg', cv2.IMREAD_GRAYSCALE)
 dp = 2 # Sigma
-l_Sup = 0.45
-l_Inf = 0.1
+l_Sup = 0.4
+l_Inf = 0.35
 
 ### Função
-gNH, gNL = canny_Edge(I, dp, l_Sup, l_Inf)
-imshow_close_withAny(gNH, 'gNH')
-imshow_close_withAny(gNL,'gNL')
+gNH, gNL, gLD = canny_Edge(I, dp, l_Sup, l_Inf)
+imshow_close_withAny(gLD, 'gNH')
